@@ -7,9 +7,26 @@ body {
     color: white;
     font-family: 'Arial', sans-serif;
     text-align: center;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+    min-width: 100vw;
+    transition: background-image 0.5s ease;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.content {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: calc(200% - 2rem);
+    height: calc(200% - 2rem);
     margin: 1rem;
-    width: calc(100% - 2rem);
-    height: calc(100% - 2rem);
+    transform: scale(0.5);
+    transform-origin: top left;
 }
 
 .information {
@@ -79,10 +96,7 @@ body {
     background-color: rgba(255, 255, 255, 0.7);
     border-radius: 1rem;
     display: flex;
-    overflow-x: scroll;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    scroll-behavior: smooth;
+    flex-direction: column;
 
     -ms-overflow-style: none;
     /* IE・Edge */
@@ -95,13 +109,17 @@ body {
 }
 
 .tab-content {
+    height: 100%;
     display: flex;
-    width: 200%;
+    flex-direction: column;
     /* 2つのタブ分 */
 }
 
 .tab {
-    scroll-snap-align: start;
-    min-width: 40vw;
     padding: 2rem;
+    height: 50%;
+}
+
+.tab h2 {
+    margin-top: 0;
 }
