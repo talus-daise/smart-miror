@@ -129,6 +129,11 @@
             }
         }
 
+        const channel = supabase.channel("todos2_changes").on("postgres_changes", { event: "*", schema: "public", table: "todos2" }, payload => {
+            console.log("Change received:", payload);
+            fetchTodos();
+        }).subscribe();
+
         // ToDoリストをHTMLに反映
         function renderTodos(todos) {
             const list = document.getElementById("todo");
@@ -146,7 +151,7 @@
                     checkbox.addEventListener("change", async () => {
                         if (checkbox.checked) {
                             checkbox.disabled = true;
-                            await supabase.from("todos2").update({ completed: true }).eq("id", todo.id);
+                            await supabase.from("todos2").update({ is_checked: true }).eq("id", todo.id);
                         }
                     });
                 }

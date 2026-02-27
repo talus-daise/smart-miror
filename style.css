@@ -5,7 +5,7 @@
 body {
     background-color: black;
     color: white;
-    font-family: 'Arial', sans-serif;
+    font-family: 'Noto Sans JP', 'Arial', sans-serif;
     text-align: center;
     margin: 0;
     width: 100vw;
@@ -22,10 +22,10 @@ body {
     position: fixed;
     top: 0;
     left: 0;
-    width: calc(200% - 2rem);
-    height: calc(200% - 2rem);
+    width: calc(135vw - 2rem);
+    height: calc(135vh - 2rem);
     margin: 1rem;
-    transform: scale(0.5);
+    transform: scale(0.75);
     transform-origin: top left;
 }
 
@@ -40,7 +40,7 @@ body {
 }
 
 #date {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
 }
 
 #time {
@@ -68,7 +68,7 @@ body {
 }
 
 #todo input {
-    transform: scale(2);
+    transform: scale(1.5);
     margin-right: 1rem;
 }
 
