@@ -1,124 +1,565 @@
-* {
-    box-sizing: border-box;
+/* ==========================================================================
+   SMART MIRROR — design tokens
+   コンセプト：暗い鏡面に情報がうっすらと浮かび上がる。
+   中央は意図的に何も置かない（鏡を覗き込んだとき顔が映る場所を塞がない）。
+   ========================================================================== */
+:root{
+  /* --- surface --- */
+  --bg-0:#05070a;
+  --bg-1:#090c11;
+  --glass-fill:rgba(255,255,255,0.035);
+  --glass-fill-strong:rgba(255,255,255,0.065);
+  --glass-border:rgba(255,255,255,0.09);
+  --glass-border-soft:rgba(255,255,255,0.055);
+
+  /* --- text --- */
+  --text-0:#eef3f8;
+  --text-1:#a6b0bd;
+  --text-2:#69707d;
+
+  /* --- accent --- */
+  --accent:#8fd7ff;
+  --accent-soft:rgba(143,215,255,0.16);
+  --accent-dim:rgba(143,215,255,0.55);
+  --warn:#ffb454;
+  --warn-soft:rgba(255,180,84,0.18);
+  --danger:#ff5c5c;
+  --danger-soft:rgba(255,92,92,0.16);
+  --good:#7fe0ac;
+
+  /* --- shape --- */
+  --radius-lg:26px;
+  --radius-md:16px;
+  --radius-sm:9px;
+  --gap:clamp(12px,1.6vw,22px);
+  --edge-pad:clamp(20px,3vw,44px);
+
+  /* --- type --- */
+  --font-display:'Space Grotesk', 'Hiragino Sans', sans-serif;
+  --font-body:'Inter', 'Hiragino Sans', sans-serif;
+  --font-mono:'JetBrains Mono', 'SFMono-Regular', monospace;
+
+  --ease:cubic-bezier(.19,1,.22,1);
 }
 
-body {
-    background-color: black;
-    color: white;
-    font-family: 'Noto Sans JP', 'Arial', sans-serif;
-    text-align: center;
-    margin: 0;
-    width: 100vw;
-    height: 100vh;
-    min-height: 100vh;
-    min-width: 100vw;
-    transition: background-image 0.5s ease;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
+*{box-sizing:border-box;}
+html,body{
+  margin:0;
+  width:100%;
+  min-height:100%;
+  background:radial-gradient(ellipse 120% 90% at 50% -10%, #10151d 0%, var(--bg-1) 45%, var(--bg-0) 100%);
+  color:var(--text-0);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+}
+body{ position:relative; }
+
+*:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+  border-radius:6px;
 }
 
-.content {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: calc(100vw - 2rem);
-    height: calc(100vh - 2rem);
-    margin: 1rem;
-    zoom: 0.75;
+::selection{ background:var(--accent-soft); color:var(--text-0); }
+
+/* 常時スクロールバーを隠す（内部の縦スクロールは維持） */
+.hourly-strip::-webkit-scrollbar,
+.daily-strip::-webkit-scrollbar,
+.agenda-list::-webkit-scrollbar{ display:none; }
+.hourly-strip, .daily-strip, .agenda-list{
+  -ms-overflow-style:none; scrollbar-width:none;
 }
 
-.information {
-    position: fixed;
-    top: 5%;
-    left: 5%;
-    color: #000000;
-    background-color: rgba(255, 255, 255, 0.7);
-    padding: 2rem;
-    border-radius: 1rem;
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important; }
 }
 
-#date {
-    font-size: 1.5rem;
+/* ==========================================================================
+   背景：鏡面のシーン（サイン・信号要素）
+   ゆっくり流れるハイライトが「鏡に反射する光」を思わせる、唯一の常時アニメーション。
+   ========================================================================== */
+.mirror-backdrop{
+  position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;
+}
+.mirror-vignette{
+  position:absolute; inset:0;
+  background:radial-gradient(ellipse 70% 60% at 50% 45%, rgba(255,255,255,0.02), transparent 70%);
+}
+.mirror-sheen{
+  position:absolute;
+  top:-40%; left:-60%;
+  width:160%; height:180%;
+  background:linear-gradient(115deg,
+    transparent 40%,
+    rgba(143,215,255,0.035) 47%,
+    rgba(255,255,255,0.05) 50%,
+    rgba(143,215,255,0.035) 53%,
+    transparent 60%);
+  animation:sheen-drift 34s linear infinite;
+  mix-blend-mode:screen;
+}
+@keyframes sheen-drift{
+  0%{ transform:translate3d(-8%,-6%,0) rotate(0.001deg); }
+  50%{ transform:translate3d(8%,6%,0) rotate(0.001deg); }
+  100%{ transform:translate3d(-8%,-6%,0) rotate(0.001deg); }
+}
+.mirror-grain{
+  position:absolute; inset:0;
+  opacity:0.025;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 
-#time {
-    font-size: 5rem;
-    margin-top: 20px;
+/* ==========================================================================
+   レイアウト：外周配置グリッド／中央は反射用の余白として空ける
+   ========================================================================== */
+.mirror-grid{
+  position:relative; z-index:1;
+  min-height:100vh;
+  padding:var(--edge-pad);
+  display:flex;
+  flex-direction:column;
+  gap:var(--gap);
 }
 
-#weather {
-    font-size: 1.5em;
-    margin-top: 20px;
+.panel{
+  background:var(--glass-fill);
+  border:1px solid var(--glass-border-soft);
+  border-radius:var(--radius-lg);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  padding:clamp(16px,2vw,26px);
+  animation:panel-rise 0.9s var(--ease) backwards;
+}
+@keyframes panel-rise{
+  from{ opacity:0; transform:translateY(10px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+.header-panel{ animation-delay:0s; }
+.weather-hero{ animation-delay:0.06s; }
+.rightcol .panel{ animation-delay:0.12s; }
+.sidebar .panel{ animation-delay:0.18s; }
+
+.panel-title{
+  margin:0 0 10px;
+  font-family:var(--font-display);
+  font-size:0.72rem;
+  letter-spacing:0.16em;
+  font-weight:600;
+  color:var(--text-2);
+  text-transform:uppercase;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.panel-divider{ height:1px; background:var(--glass-border-soft); margin:14px 0; }
+
+.eyebrow{
+  margin:0 0 6px;
+  font-size:0.78rem;
+  letter-spacing:0.06em;
+  color:var(--text-2);
+  font-weight:500;
+}
+.eyebrow-right{ text-align:right; }
+
+/* Desktop / kiosk：一画面完結のエッジ配置グリッド
+   中央列を空けることで「鏡としての機能（顔が映る場所）」を確保する */
+@media (min-width:920px){
+  html,body{ overflow:hidden; }
+  .mirror-grid{
+    height:100vh;
+    display:grid;
+    grid-template-columns: minmax(260px,1.05fr) minmax(120px,0.7fr) minmax(300px,1.15fr);
+    grid-template-rows: auto minmax(0,1fr) auto;
+    grid-template-areas:
+      "header   .   weatherhero"
+      "sidebar  .   rightcol"
+      "footer   footer  footer";
+  }
+  .header-panel{ grid-area:header; }
+  .weather-hero{ grid-area:weatherhero; }
+  .rightcol{ grid-area:rightcol; display:flex; flex-direction:column; gap:var(--gap); min-height:0; overflow-y:auto; }
+  .sidebar{ grid-area:sidebar; display:flex; flex-direction:column; gap:var(--gap); min-height:0; overflow-y:auto; }
+  .status-bar{ grid-area:footer; }
+  .rightcol .forecast-panel{ flex:0 0 auto; }
+  .sidebar .news-panel{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+  .hourly-strip{ max-height:none; }
+}
+.rightcol::-webkit-scrollbar, .sidebar::-webkit-scrollbar{ display:none; }
+.rightcol, .sidebar{ -ms-overflow-style:none; scrollbar-width:none; }
+
+@media (max-width:919px){
+  body{ overflow-y:auto; overflow-x:hidden; }
+  .mirror-grid{ min-height:100vh; }
+  .rightcol, .sidebar{ display:flex; flex-direction:column; gap:var(--gap); }
 }
 
-.weather-icon {
-    font-size: 2em;
-    margin-right: 10px;
+/* ==========================================================================
+   ヘッダー：時計・日付
+   ========================================================================== */
+.clock-wrap{
+  position:relative;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:clamp(120px,13vw,168px);
+  height:clamp(120px,13vw,168px);
+  margin:2px 0 6px -6px;
+}
+.clock-ring{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+.clock-ring-track{
+  fill:none; stroke:rgba(255,255,255,0.06); stroke-width:1.5;
+}
+.clock-ring-fill{
+  fill:none; stroke:var(--accent); stroke-width:1.5; stroke-linecap:round;
+  stroke-dasharray:339.3; stroke-dashoffset:339.3;
+  filter:drop-shadow(0 0 6px var(--accent-dim));
+  transition:stroke-dashoffset 0.9s linear;
+}
+.clock-readout{
+  display:flex; align-items:baseline; gap:2px;
+  font-family:var(--font-display);
+}
+.time-main{
+  font-size:clamp(1.5rem,2.3vw,2.1rem);
+  font-weight:600;
+  letter-spacing:0.01em;
+  font-variant-numeric:tabular-nums;
+}
+.time-seconds{
+  font-family:var(--font-mono);
+  font-size:0.85rem;
+  color:var(--text-2);
+  align-self:flex-start;
+  margin-top:4px;
+  font-variant-numeric:tabular-nums;
+}
+.date-line{
+  margin:2px 0 16px;
+  font-size:0.95rem;
+  color:var(--text-1);
+  font-weight:500;
 }
 
-#todo {
-    font-size: 1.3rem;
-    text-align: left;
+.day-progress{
+  display:flex; align-items:center; gap:10px;
+}
+.day-progress-icon{ width:15px; height:15px; flex:none; color:var(--text-2); display:flex; }
+.day-progress-icon svg{ width:100%; height:100%; }
+.day-progress-track{
+  position:relative;
+  flex:1;
+  height:3px;
+  background:rgba(255,255,255,0.08);
+  border-radius:4px;
+  overflow:visible;
+}
+.day-progress-fill{
+  height:100%;
+  border-radius:4px;
+  background:linear-gradient(90deg, var(--accent-dim), var(--accent));
+  width:0%;
+  transition:width 1.2s var(--ease);
+}
+.day-progress-now{
+  position:absolute; top:50%; left:0%;
+  width:7px; height:7px; border-radius:50%;
+  background:var(--text-0);
+  box-shadow:0 0 8px 2px var(--accent-soft);
+  transform:translate(-50%,-50%);
+  transition:left 1.2s var(--ease);
+}
+.day-progress-labels{
+  display:flex; justify-content:space-between;
+  font-family:var(--font-mono);
+  font-size:0.68rem;
+  color:var(--text-2);
+  margin-top:5px;
+  padding:0 1px;
 }
 
-#todo label {
-    line-height: 2.5rem;
+/* ==========================================================================
+   天気ヒーロー
+   ========================================================================== */
+.weather-hero-main{
+  display:flex; align-items:center; gap:clamp(10px,1.6vw,22px);
+}
+.weather-icon-lg{
+  width:clamp(56px,6vw,88px); height:clamp(56px,6vw,88px);
+  flex:none;
+  color:var(--accent);
+  filter:drop-shadow(0 0 14px var(--accent-soft));
+  animation:icon-pop 0.6s var(--ease) backwards;
+}
+.weather-icon-lg svg{ width:100%; height:100%; }
+@keyframes icon-pop{ from{ opacity:0; transform:scale(0.85); } to{ opacity:1; transform:scale(1); } }
+
+.weather-temp-block{ display:flex; flex-direction:column; min-width:0; }
+.weather-temp{
+  font-family:var(--font-display);
+  font-size:clamp(2.2rem,3.6vw,3.4rem);
+  font-weight:600;
+  line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.weather-temp small{ font-size:0.5em; font-weight:400; color:var(--text-1); }
+.weather-desc{
+  font-size:0.98rem; color:var(--text-1); margin-top:6px;
+}
+.weather-feelslike{
+  font-family:var(--font-mono); font-size:0.72rem; color:var(--text-2); margin-top:3px;
 }
 
-#todo input {
-    transform: scale(1.5);
-    margin-right: 1rem;
+.weather-sub-grid{
+  margin-top:18px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(72px,1fr));
+  gap:10px 6px;
+}
+.sub-stat{
+  display:flex; flex-direction:column; gap:3px;
+  padding:9px 4px;
+  border-top:1px solid var(--glass-border-soft);
+}
+.sub-stat-label{ font-size:0.62rem; letter-spacing:0.05em; color:var(--text-2); text-transform:uppercase; }
+.sub-stat-value{ font-family:var(--font-mono); font-size:0.92rem; color:var(--text-0); font-variant-numeric:tabular-nums; }
+
+/* 数値更新時のフェード */
+.value-flip{ animation:value-flip 0.5s var(--ease); }
+@keyframes value-flip{
+  from{ opacity:0.15; transform:translateY(3px); }
+  to{ opacity:1; transform:translateY(0); }
 }
 
-#news-container {
-    margin-top: 20px;
-    height: 80%;
-    /* ニュース欄の高さ */
-    overflow: hidden;
-    /* はみ出た部分を隠す */
-    position: relative;
+/* ==========================================================================
+   時間別／週間予報
+   ========================================================================== */
+.hourly-strip{
+  display:flex; gap:clamp(8px,1.1vw,16px);
+  overflow-x:auto;
+  padding-bottom:4px;
 }
-
-#news-list {
-    width: 100%;
-    position: absolute;
+.hour-card{
+  flex:none; width:56px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  padding:8px 0;
+  animation:panel-rise 0.6s var(--ease) backwards;
 }
+.hour-card .hour-time{ font-family:var(--font-mono); font-size:0.68rem; color:var(--text-2); }
+.hour-card .hour-icon{ width:22px; height:22px; color:var(--text-1); }
+.hour-card .hour-icon svg{ width:100%; height:100%; }
+.hour-card .hour-temp{ font-family:var(--font-mono); font-size:0.85rem; font-variant-numeric:tabular-nums; }
+.hour-card .hour-pop{ font-size:0.62rem; color:var(--accent-dim); font-family:var(--font-mono); }
 
-.tab-container {
-    position: fixed;
-    width: 40%;
-    height: 40%;
-    bottom: 5%;
-    right: 5%;
-    color: #000000;
-    background-color: rgba(255, 255, 255, 0.7);
-    border-radius: 1rem;
-    display: flex;
-    flex-direction: column;
-
-    -ms-overflow-style: none;
-    /* IE・Edge */
-    scrollbar-width: none;
+.daily-strip{ display:flex; flex-direction:column; gap:2px; margin-top:6px; }
+.day-row{
+  display:grid;
+  grid-template-columns:44px 20px 30px 1fr 30px 38px;
+  align-items:center; gap:8px;
+  padding:8px 2px;
+  border-top:1px solid var(--glass-border-soft);
+  animation:panel-rise 0.6s var(--ease) backwards;
 }
-
-.tab-container::-webkit-scrollbar {
-    display: none;
-    /* Chrome, Safari */
+.day-row:first-child{ border-top:none; }
+.day-row .day-name{ font-size:0.8rem; color:var(--text-1); }
+.day-row .day-icon{ width:17px; height:17px; color:var(--text-1); }
+.day-row .day-icon svg{ width:100%; height:100%; }
+.day-row .day-min{ font-family:var(--font-mono); font-size:0.74rem; color:var(--text-2); text-align:right; }
+.day-row .day-max{ font-family:var(--font-mono); font-size:0.78rem; color:var(--text-0); text-align:right; }
+.day-row .day-range{
+  position:relative; height:4px; border-radius:4px; background:rgba(255,255,255,0.07);
 }
-
-.tab-content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    /* 2つのタブ分 */
+.day-range-fill{
+  position:absolute; top:0; bottom:0; border-radius:4px;
+  background:linear-gradient(90deg,var(--accent-dim),var(--warn));
 }
+.day-row .day-pop{ font-family:var(--font-mono); font-size:0.68rem; color:var(--accent-dim); text-align:right; }
 
-.tab {
-    padding: 2rem;
-    height: 50%;
+/* ==========================================================================
+   補助情報タイル
+   ========================================================================== */
+.extras-panel{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(148px,1fr));
+  gap:1px;
+  background:var(--glass-border-soft);
+  overflow:hidden;
+  padding:0;
 }
+.extra-tile{
+  background:var(--bg-1);
+  padding:14px clamp(12px,1.6vw,20px);
+  display:flex; flex-direction:column; gap:6px;
+}
+.extra-tile:last-child:nth-child(odd){ grid-column:1 / -1; }
+.extra-label{ font-size:0.66rem; letter-spacing:0.05em; color:var(--text-2); text-transform:uppercase; }
+.extra-value{ font-size:0.95rem; font-weight:500; }
+.extra-value.state-good{ color:var(--good); }
+.extra-value.state-mid{ color:var(--warn); }
+.extra-value.state-bad{ color:var(--danger); }
 
-.tab h2 {
-    margin-top: 0;
+/* ==========================================================================
+   ニュース
+   ========================================================================== */
+.news-panel{ position:relative; }
+.news-source{ font-family:var(--font-mono); text-transform:none; letter-spacing:0; font-size:0.68rem; }
+.news-viewport{
+  position:relative;
+  min-height:96px;
+  flex:1;
+}
+.news-article{
+  position:absolute; inset:0;
+  animation:news-in 0.7s var(--ease);
+}
+@keyframes news-in{
+  from{ opacity:0; transform:translateX(14px); }
+  to{ opacity:1; transform:translateX(0); }
+}
+.news-article.leaving{ animation:news-out 0.5s var(--ease) forwards; }
+@keyframes news-out{
+  to{ opacity:0; transform:translateX(-14px); }
+}
+.news-headline{
+  margin:0 0 8px; font-size:1.05rem; line-height:1.45; font-weight:500; color:var(--text-0);
+}
+.news-summary{
+  margin:0; font-size:0.82rem; line-height:1.6; color:var(--text-1);
+}
+.news-meta{ margin-top:12px; }
+.news-progress{ height:2px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; }
+.news-progress-fill{ height:100%; background:var(--accent); width:0%; }
+.news-progress-fill.animate{ transition:width linear; }
+.news-dots{ display:flex; gap:5px; margin-top:9px; }
+.news-dots span{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,0.16); transition:background 0.3s; }
+.news-dots span.active{ background:var(--accent); }
+
+/* ==========================================================================
+   タスク（Supabase todos2 と同期）
+   ========================================================================== */
+.agenda-panel{ flex:none; }
+.agenda-list{ display:flex; flex-direction:column; gap:2px; max-height:180px; overflow-y:auto; }
+.agenda-empty{ color:var(--text-2); font-size:0.85rem; margin:0; }
+.agenda-item{
+  display:flex; align-items:center; gap:10px;
+  padding:8px 2px;
+  border-top:1px solid var(--glass-border-soft);
+  font-size:0.88rem;
+  animation:panel-rise 0.5s var(--ease) backwards;
+}
+.agenda-item:first-child{ border-top:none; }
+.agenda-check{
+  width:16px; height:16px; border-radius:5px;
+  border:1.5px solid var(--text-2);
+  flex:none;
+  display:flex; align-items:center; justify-content:center;
+  transition:border-color 0.2s, background 0.2s;
+}
+.agenda-check svg{ width:10px; height:10px; opacity:0; transition:opacity 0.2s; color:var(--bg-0); }
+.agenda-item.done .agenda-check{ background:var(--accent); border-color:var(--accent); }
+.agenda-item.done .agenda-check svg{ opacity:1; }
+.agenda-item.done .agenda-text{ color:var(--text-2); text-decoration:line-through; text-decoration-color:var(--text-2); }
+.agenda-text{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ==========================================================================
+   フッター（ステータスバー）
+   ========================================================================== */
+.status-bar{
+  display:flex; align-items:center; gap:8px;
+  justify-content:center;
+  font-family:var(--font-mono);
+  font-size:0.68rem;
+  color:var(--text-2);
+  letter-spacing:0.04em;
+  padding:2px 0;
+}
+.status-dot{
+  width:6px; height:6px; border-radius:50%;
+  background:var(--good);
+  box-shadow:0 0 6px 1px rgba(127,224,172,0.6);
+  animation:status-breathe 2.6s ease-in-out infinite;
+}
+.status-dot.warn{ background:var(--warn); box-shadow:0 0 6px 1px rgba(255,180,84,0.6); }
+.status-dot.danger{ background:var(--danger); box-shadow:0 0 6px 1px rgba(255,92,92,0.6); animation-duration:1s; }
+@keyframes status-breathe{ 0%,100%{ opacity:0.55; } 50%{ opacity:1; } }
+
+/* ==========================================================================
+   天気急変アラート
+   画面操作を前提にできないため、ボタンでの確認は求めない。
+   1) 中央に大きく表示 + 警告音 → 2) 数秒後、自動的に右下の隅へ縮小し、
+   危険が続く間はバッジとして表示し続ける（クリック等は一切不要）。
+   ========================================================================== */
+.alert-overlay{
+  position:fixed; inset:0; z-index:50;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(5,7,10,0.6);
+  backdrop-filter:blur(6px);
+  opacity:0; pointer-events:none;
+  padding:26px;
+  transition:opacity 0.5s var(--ease), background 0.7s var(--ease), backdrop-filter 0.7s var(--ease),
+    align-items 0.7s var(--ease), justify-content 0.7s var(--ease);
+}
+.alert-overlay.visible{ opacity:1; }
+.alert-overlay.collapsed{
+  align-items:flex-end; justify-content:flex-end;
+  background:transparent;
+  backdrop-filter:none;
+}
+.alert-card{
+  width:min(420px,86vw);
+  padding:32px 30px 26px;
+  border-radius:var(--radius-lg);
+  background:linear-gradient(180deg, rgba(255,92,92,0.09), var(--glass-fill-strong));
+  border:1px solid rgba(255,92,92,0.35);
+  box-shadow:0 0 0 1px rgba(255,92,92,0.08), 0 24px 60px rgba(0,0,0,0.55), 0 0 46px rgba(255,92,92,0.14);
+  text-align:center;
+  transform:translateY(14px) scale(0.97);
+  transition:transform 0.5s var(--ease), width 0.7s var(--ease), padding 0.7s var(--ease),
+    border-radius 0.7s var(--ease), background 0.7s var(--ease), box-shadow 0.7s var(--ease);
+}
+.alert-overlay.visible .alert-card{ transform:translateY(0) scale(1); }
+.alert-overlay.collapsed .alert-card{
+  width:auto; max-width:min(280px,70vw);
+  padding:12px 18px;
+  border-radius:999px;
+  text-align:left;
+  transform:none;
+  box-shadow:0 10px 30px rgba(0,0,0,0.45), 0 0 22px rgba(255,92,92,0.12);
+}
+.alert-details{ transition:opacity 0.25s var(--ease); }
+.alert-overlay.collapsed .alert-details{ display:none; }
+.alert-compact{ display:none; align-items:center; gap:10px; }
+.alert-overlay.collapsed .alert-compact{ display:flex; }
+.alert-compact-icon{
+  width:16px; height:16px; flex:none; color:var(--danger);
+  animation:alert-pulse 1.6s ease-in-out infinite;
+}
+.alert-compact-text{
+  font-size:0.78rem; font-weight:500; color:var(--text-0);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.alert-icon{
+  width:44px; height:44px; margin:0 auto 14px;
+  color:var(--danger);
+  animation:alert-pulse 1.6s ease-in-out infinite;
+}
+.alert-icon svg{ width:100%; height:100%; }
+@keyframes alert-pulse{ 0%,100%{ filter:drop-shadow(0 0 2px rgba(255,92,92,0.4)); } 50%{ filter:drop-shadow(0 0 14px rgba(255,92,92,0.85)); } }
+.alert-eyebrow{
+  margin:0 0 6px; font-size:0.7rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--danger); font-weight:600;
+}
+.alert-title{ margin:0 0 10px; font-family:var(--font-display); font-size:1.3rem; font-weight:600; }
+.alert-body{ margin:0; font-size:0.9rem; line-height:1.7; color:var(--text-1); white-space:pre-line; }
+
+/* ==========================================================================
+   夜間の自動減光（就寝時などに眩しくなりすぎないよう、時刻に応じて自動で暗くする）
+   ========================================================================== */
+.mirror-grid, .mirror-backdrop{ transition:filter 4s var(--ease), opacity 4s var(--ease); }
+body.is-night .mirror-grid{ filter:brightness(0.55) saturate(0.85); }
+body.is-night .mirror-backdrop{ opacity:0.45; }
+
+/* ==========================================================================
+   ポータブル表示（縦型・狭幅）：積み上げレイアウトへフォールバック
+   ========================================================================== */
+@media (max-width:919px){
+  .weather-hero-main{ flex-wrap:wrap; }
+  .clock-wrap{ width:110px; height:110px; }
 }

@@ -1,215 +1,170 @@
 <!DOCTYPE html>
 <html lang="ja">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0">
-    <title>スマートミラー</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="style.css">
-</head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover">
+<title>Smart Mirror</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
 <body>
-    <div class="content">
-        <div class="information">
-            <div id="date"></div>
-            <div id="time"></div>
-            <div id="weather"></div>
+
+  <!-- 鏡面の質感を演出する背景レイヤー（クリック等には反応しない） -->
+  <div class="mirror-backdrop" aria-hidden="true">
+    <div class="mirror-vignette"></div>
+    <div class="mirror-sheen"></div>
+    <div class="mirror-grain"></div>
+  </div>
+
+  <main class="mirror-grid">
+
+    <!-- ============ 左上：日付・時刻 ============ -->
+    <header class="panel header-panel" id="header-panel">
+      <p class="eyebrow" id="greeting">&nbsp;</p>
+      <div class="clock-wrap">
+        <svg class="clock-ring" viewBox="0 0 120 120" aria-hidden="true">
+          <circle class="clock-ring-track" cx="60" cy="60" r="54"></circle>
+          <circle class="clock-ring-fill" id="clock-ring-fill" cx="60" cy="60" r="54"></circle>
+        </svg>
+        <div class="clock-readout">
+          <span class="time-main" id="time-main">--:--</span><span class="time-seconds" id="time-seconds">--</span>
         </div>
-        <div class="tab-container">
-            <div class="tab-content">
-                <div class="tab">
-                    <h2>TODO</h2>
-                    <div id="todo"></div>
-                </div>
-            </div>
+      </div>
+      <p class="date-line" id="date-line">&nbsp;</p>
+
+      <div class="day-progress" id="day-progress">
+        <span class="day-progress-icon" title="日の出">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 18h16M6.5 18a5.5 5.5 0 0 1 11 0"/><path d="M12 8v4.2M8.5 9.5l1.3 1.3M15.5 9.5l-1.3 1.3"/><path d="M2.5 21h19" opacity="0.5"/></svg>
+        </span>
+        <div class="day-progress-track">
+          <div class="day-progress-fill" id="day-progress-fill"></div>
+          <div class="day-progress-now" id="day-progress-now"></div>
         </div>
+        <span class="day-progress-icon" title="日の入り">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 18h16M6.5 18a5.5 5.5 0 0 1 11 0"/><path d="M12 13v-4M8.5 10.8 9.8 9.5M15.5 10.8l-1.3-1.3"/><path d="M2.5 21h19" opacity="0.5"/></svg>
+        </span>
+      </div>
+      <div class="day-progress-labels">
+        <span id="sunrise-label">--:--</span>
+        <span id="sunset-label">--:--</span>
+      </div>
+    </header>
+
+    <!-- ============ 右上：天気ヒーロー ============ -->
+    <section class="panel weather-hero" id="weather-hero" aria-live="polite">
+      <p class="eyebrow eyebrow-right" id="location-label">&nbsp;</p>
+      <div class="weather-hero-main">
+        <div class="weather-icon-lg" id="weather-icon-lg"></div>
+        <div class="weather-temp-block">
+          <span class="weather-temp" id="weather-temp">--<small>°</small></span>
+          <span class="weather-desc" id="weather-desc">読み込み中…</span>
+          <span class="weather-feelslike" id="weather-feelslike">&nbsp;</span>
+        </div>
+      </div>
+      <div class="weather-sub-grid" id="weather-sub-grid"><!-- JSで生成 --></div>
+    </section>
+
+    <!-- ============ 右列：時間別・週間予報＋補助情報 ============ -->
+    <div class="rightcol">
+      <section class="panel forecast-panel" id="forecast-panel">
+        <h2 class="panel-title">時間別予報</h2>
+        <div class="hourly-strip" id="hourly-strip"></div>
+        <div class="panel-divider"></div>
+        <h2 class="panel-title">週間予報</h2>
+        <div class="daily-strip" id="daily-strip"></div>
+      </section>
+
+      <section class="panel extras-panel" id="extras-panel">
+        <div class="extra-tile" id="extra-aqi">
+          <span class="extra-label">大気質</span>
+          <span class="extra-value" id="extra-aqi-value">--</span>
+        </div>
+        <div class="extra-tile" id="extra-laundry">
+          <span class="extra-label">洗濯指数</span>
+          <span class="extra-value" id="extra-laundry-value">--</span>
+        </div>
+        <div class="extra-tile" id="extra-moon">
+          <span class="extra-label">月齢</span>
+          <span class="extra-value" id="extra-moon-value">--</span>
+        </div>
+        <div class="extra-tile" id="extra-outfit">
+          <span class="extra-label">おでかけの目安</span>
+          <span class="extra-value" id="extra-outfit-value">--</span>
+        </div>
+        <div class="extra-tile" id="extra-peak">
+          <span class="extra-label">本日の最高・最低</span>
+          <span class="extra-value" id="extra-peak-value">--</span>
+        </div>
+      </section>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-    <script type="module">
-        import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+    <!-- ============ 左列：ニュース＋タスク ============ -->
+    <div class="sidebar">
+      <section class="panel news-panel" id="news-panel">
+        <h2 class="panel-title">
+          <span>ニュース</span>
+          <span class="news-source" id="news-source">&nbsp;</span>
+        </h2>
+        <div class="news-viewport" id="news-viewport">
+          <article class="news-article" id="news-article">
+            <p class="news-headline">読み込み中…</p>
+            <p class="news-summary"></p>
+          </article>
+        </div>
+        <div class="news-meta">
+          <div class="news-progress"><div class="news-progress-fill" id="news-progress-fill"></div></div>
+          <div class="news-dots" id="news-dots"></div>
+        </div>
+      </section>
 
-        const supabase = createClient(
-            "https://nnfvwpzwvscfpyrrsygt.supabase.co",
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uZnZ3cHp3dnNjZnB5cnJzeWd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNjgzMjIsImV4cCI6MjA4NTc0NDMyMn0.wqeKyvXjVKK8oo5CD09L8FvEH3H7rs2Xit-H4FG1HSc"
-        );
+      <section class="panel agenda-panel" id="agenda-panel">
+        <h2 class="panel-title">タスク</h2>
+        <div class="agenda-list" id="todo-list">
+          <p class="agenda-empty">同期中…</p>
+        </div>
+      </section>
+    </div>
 
-        // 日付の更新処理
-        async function updateDate() {
-            const daysOfWeek = ["日曜日", "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日"];
-            while (true) {
-                const now = new Date();
-                const years = now.getFullYear().toString();
-                const month = (now.getMonth() + 1).toString().padStart(2, '0');
-                const date = now.getDate().toString().padStart(2, '0');
-                const day = daysOfWeek[now.getDay()];
-                document.getElementById("date").innerHTML = `${years}-${month}-${date} (${day})`;
-                await new Promise(resolve => setTimeout(resolve, 600000))
-            }
-        }
+    <!-- ============ フッター：ステータス ============ -->
+    <footer class="status-bar" id="status-bar">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">起動中…</span>
+    </footer>
 
-        // 時刻の更新処理
-        async function updateClock() {
-            while (true) {
-                const now = new Date();
-                const hours = now.getHours().toString().padStart(2, '0');
-                const minutes = now.getMinutes().toString().padStart(2, '0');
-                const seconds = now.getSeconds().toString().padStart(2, '0');
-                document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-        }
+  </main>
 
-        // 天気情報の更新処理
-        async function updateWeather() {
-            const apiKey = 'bd9cd74922b86b8af7340f8b53d84750';
-            const city = 'Mito';
-            while (true) {
-                const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=ja`);
-                const data = await response.json();
+  <!-- ============ 警告通知（天気急変）
+       画面には一切触れられない前提のため、ボタン操作は要求しない。
+       自動で「目立つ表示 → 数秒後に端へ小さく収納」という流れにし、
+       危険が続く間は隅に小さなバッジとして表示し続ける。 ============ -->
+  <div class="alert-overlay" id="alert-overlay" aria-hidden="true">
+    <div class="alert-card" id="alert-card">
+      <div class="alert-details" id="alert-details">
+        <div class="alert-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M12 3 1 21h22L12 3Z" stroke-linejoin="round"/>
+            <path d="M12 9.5v5" stroke-linecap="round"/>
+            <circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/>
+          </svg>
+        </div>
+        <p class="alert-eyebrow">天気急変アラート</p>
+        <p class="alert-title" id="alert-title"></p>
+        <p class="alert-body" id="alert-body"></p>
+      </div>
+      <div class="alert-compact" id="alert-compact">
+        <svg class="alert-compact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M12 3 1 21h22L12 3Z" stroke-linejoin="round"/>
+          <path d="M12 9.5v5" stroke-linecap="round"/>
+          <circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/>
+        </svg>
+        <span class="alert-compact-text" id="alert-compact-text"></span>
+      </div>
+    </div>
+  </div>
 
-                const temperature = data.main.temp.toFixed(1);
-                const weatherDescription = data.weather[0].description;
-                const iconCode = data.weather[0].icon;
-                const humidity = data.main.humidity;
-                const feelsLike = data.main.feels_like.toFixed(1);
-                const pressure = data.main.pressure;
-
-                const weatherIcon = getWeatherIcon(iconCode);
-                const weatherName = returnWeatherName(iconCode);
-
-                const weatherElement = document.getElementById('weather');
-                weatherElement.innerHTML = `<i class="weather-icon ${weatherIcon}"></i><small>${weatherName}</small><br>
-                                        <p>${temperature}℃(${feelsLike}℃) / ${humidity}%  ${pressure}hpa</p>`;
-
-                await new Promise(resolve => setTimeout(resolve, 600000));
-            }
-        }
-
-        function getWeatherIcon(iconCode) {
-            const iconMap = {
-                '01d': 'fas fa-sun', '01n': 'fas fa-moon', '02d': 'fas fa-cloud', '02n': 'fas fa-cloud',
-                '03d': 'fas fa-cloud-sun', '03n': 'fas fa-cloud-moon', '04d': 'fas fa-cloud', '04n': 'fas fa-cloud',
-                '09d': 'fas fa-cloud-showers-heavy', '09n': 'fas fa-cloud-showers-heavy',
-                '10d': 'fas fa-cloud-rain', '10n': 'fas fa-cloud-rain',
-                '11d': 'fas fa-bolt', '11n': 'fas fa-bolt',
-                '13d': 'fas fa-snowflake', '13n': 'fas fa-snowflake',
-                '50d': 'fas fa-smog', '50n': 'fas fa-smog',
-                '14d': 'fas fa-bolt', '14n': 'fas fa-bolt', '15d': 'fas fa-snowflake', '15n': 'fas fa-snowflake',
-                '16d': 'fas fa-cloud-showers-heavy', '16n': 'fas fa-cloud-showers-heavy',
-                '17d': 'fas fa-bolt', '17n': 'fas fa-bolt', '18d': 'fas fa-snowflake', '18n': 'fas fa-snowflake',
-                '19d': 'fas fa-cloud-rain', '19n': 'fas fa-cloud-rain'
-            };
-            return iconMap[iconCode] || 'fas fa-question';
-        }
-
-        function returnWeatherName(iconCode) {
-            const weatherMap = {
-                '01d': '快晴', '01n': '快晴', '02d': '曇り', '02n': '曇り',
-                '03d': '晴れ', '03n': '晴れ', '04d': '曇り', '04n': '曇り',
-                '09d': '大雨', '09n': '大雨', '10d': '小雨', '10n': '小雨',
-                '11d': '雷', '11n': '雷', '13d': '雪', '13n': '雪',
-                '50d': '霧', '50n': '霧', '14d': '雷雨', '14n': '雷雨',
-                '15d': '大雪', '15n': '大雪', '16d': '豪雨', '16n': '豪雨',
-                '17d': '激しい雷雨', '17n': '激しい雷雨', '18d': '小雪', '18n': '小雪',
-                '19d': '霧雨', '19n': '霧雨'
-            };
-            return weatherMap[iconCode] || '不明';
-        }
-
-        // ToDoリスト取得と描画
-        async function fetchTodos() {
-            try {
-                const { data, error } = await supabase.from("todos2").select("*").order("is_checked", { ascending: true }).limit(7);
-                if (error) return console.error("Error fetching todos:", error);
-                renderTodos(data);
-            } catch (err) {
-                console.error("Unexpected error:", err);
-            }
-        }
-
-        const channel = supabase.channel("todos2_changes").on("postgres_changes", { event: "*", schema: "public", table: "todos2" }, payload => {
-            console.log("Change received:", payload);
-            fetchTodos();
-        }).subscribe();
-
-        // ToDoリストをHTMLに反映
-        function renderTodos(todos) {
-            const list = document.getElementById("todo");
-            list.innerHTML = "";
-            todos.forEach(todo => {
-                const label = document.createElement("label");
-                label.style.display = "block";
-                const checkbox = document.createElement("input");
-                checkbox.type = "checkbox";
-
-                if (todo.is_checked) {
-                    checkbox.checked = true;
-                    checkbox.disabled = true;
-                } else {
-                    checkbox.addEventListener("change", async () => {
-                        if (checkbox.checked) {
-                            checkbox.disabled = true;
-                            await supabase.from("todos2").update({ is_checked: true }).eq("id", todo.id);
-                        }
-                    });
-                }
-
-                label.appendChild(checkbox);
-                label.append(` ${todo.task}`);
-                list.appendChild(label);
-            });
-        }
-
-        async function randomPicture() {
-            while (true) {
-                const width = window.innerWidth;
-                const height = window.innerHeight;
-                const response = await fetch(`https://picsum.photos/${width}/${height}`);
-                if (response.ok) {
-                    document.body.style.backgroundImage = `url('${response.url}')`;
-                    document.body.style.backgroundSize = "cover";
-                    document.body.style.backgroundPosition = "center";
-                    document.body.style.backgroundRepeat = "no-repeat";
-                } else {
-                    console.error("Failed to fetch random picture");
-                }
-                await new Promise(resolve => setTimeout(resolve, 600000)); // 10分ごとに更新
-            }
-        }
-
-        async function showNotification(title, options) {
-            const notification = document.createElement("div");
-            notification.className = "notification";
-            notification.innerHTML = `<strong>${title}</strong><p>${options.body}</p>`;
-            document.body.appendChild(notification);
-            const sound = new Audio("sounds/notification_sound.mp3");
-            sound.play();
-            await new Promise(resolve => setTimeout(resolve, 5000)); // 5秒後に通知を消す
-            notification.remove();
-        }
-
-        async function scheduleNotifications() {
-            const notifications = [
-                { title: "お知らせ1", body: "これは最初のお知らせです。" },
-                { title: "お知らせ2", body: "これは2番目のお知らせです。" },
-                { title: "お知らせ3", body: "これは3番目のお知らせです。" }
-            ];
-
-            for (const notification of notifications) {
-                showNotification(notification.title, { body: notification.body });
-                await new Promise(resolve => setTimeout(resolve, 10000)); // 10秒ごとに通知を表示
-            }
-        }
-
-        // 並行してすべての処理を開始
-        async function runTasks() {
-            await Promise.all([updateDate(), updateClock(), updateWeather(), fetchTodos(), randomPicture(), scheduleNotifications()]);
-        }
-
-        document.addEventListener('DOMContentLoaded', runTasks);
-    </script>
+  <script type="module" src="app.js"></script>
 </body>
-
 </html>
