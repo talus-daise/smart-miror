@@ -38,13 +38,25 @@ const CONFIG = {
   },
 
   // 既存実装から引き継いだ Supabase 接続情報（ToDoリスト表示用）
+  // 「こんだーてMenu」（買い物リストアプリ）と同一プロジェクト・同一テーブルを参照する
   supabase: {
     url: "https://nnfvwpzwvscfpyrrsygt.supabase.co",
     anonKey:
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5uZnZ3cHp3dnNjZnB5cnJzeWd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxNjgzMjIsImV4cCI6MjA4NTc0NDMyMn0.wqeKyvXjVKK8oo5CD09L8FvEH3H7rs2Xit-H4FG1HSc",
-    table: "todos2",
+    table: "todos2",       // タスク（こんだーてMenuの「todo2」画面と同じテーブル）
+    shoppingTable: "todos", // 買い物リスト（こんだーてMenuの「todo」画面と同じテーブル）
   },
 };
+
+/* カテゴリ値 → 表示ラベル（こんだーてMenu側の定義に合わせてある） */
+const SHOPPING_TYPES = [
+  { value: "vegetable", label: "野菜室" },
+  { value: "freezer", label: "冷凍庫" },
+  { value: "fridge", label: "冷蔵庫" },
+  { value: "diary", label: "日用品" },
+  { value: "stock", label: "ストック" },
+  { value: "other", label: "その他" },
+];
 
 /* ==========================================================================
    状態
@@ -591,7 +603,7 @@ async function fetchNews() {
     const sourceName = (data.feed && data.feed.title) || "NEWS";
     return data.items.slice(0, CONFIG.news.maxItems).map((item) => ({
       title: stripHtml(item.title),
-      summary: stripHtml(item.description).slice(0, 110),
+      summary: stripHtml(item.description).slice(0, 220),
       source: sourceName,
     }));
   } catch (err) {
@@ -624,7 +636,11 @@ function showNewsItem(index, animateOut) {
   const old = viewport.querySelector(".news-article");
   const el = document.createElement("article");
   el.className = "news-article";
-  el.innerHTML = `<p class="news-headline">${escapeHtml(item.title)}</p><p class="news-summary">${escapeHtml(item.summary)}</p>`;
+  el.innerHTML =
+    `<div class="news-article-scroll">` +
+    `<p class="news-headline">${escapeHtml(item.title)}</p>` +
+    `<p class="news-summary">${escapeHtml(item.summary)}</p>` +
+    `</div>`;
 
   if (old) {
     if (animateOut) {
@@ -635,6 +651,18 @@ function showNewsItem(index, animateOut) {
     }
   }
   viewport.appendChild(el);
+
+  // 見出し・本文が枠の高さに収まらない場合、切り捨てる代わりに
+  // ゆっくり縦スクロールして最後まで見せてから次のニュースへ切り替える
+  requestAnimationFrame(() => {
+    const scrollEl = el.querySelector(".news-article-scroll");
+    const overflow = scrollEl.scrollHeight - viewport.clientHeight;
+    if (overflow > 4) {
+      scrollEl.style.setProperty("--scroll-distance", `-${overflow}px`);
+      scrollEl.style.animationDuration = `${CONFIG.news.rotateIntervalMs}ms`;
+      scrollEl.classList.add("auto-scroll");
+    }
+  });
 
   document.querySelectorAll("#news-dots span").forEach((d, i) => d.classList.toggle("active", i === index));
   resetNewsProgress();
