@@ -4,6 +4,15 @@
    中央は意図的に何も置かない（鏡を覗き込んだとき顔が映る場所を塞がない）。
    ========================================================================== */
 :root {
+  /* --- UI Scaling & Zoom (スマートミラーの拡大調整用) --- */
+  /* スマートミラーで1920x1080の240%拡大で表示される場合 (ビューポート 800x450)、
+     デフォルトの200%から2.4倍に拡大（480% / 0.208333倍縮小）することで、
+     1920x1080 (100%表示) と全く同じ要素配置とサイズを保ちます。*/
+
+  --zoom-percent: 150%;
+  --zoom-percent-vh: 150vh;
+  --zoom-scale: 0.6666667;
+
   /* --- surface --- */
   --bg-0: #05070a;
   --bg-1: #090c11;
@@ -159,9 +168,9 @@ body {
 .mirror-grid {
   position: relative;
   z-index: 1;
-  width: 200%;
-  min-height: 200vh;
-  transform: scale(0.5);
+  width: var(--zoom-percent);
+  min-height: var(--zoom-percent-vh);
+  transform: scale(var(--zoom-scale));
   transform-origin: top left;
   padding: var(--edge-pad);
   display: flex;
@@ -240,7 +249,7 @@ body {
 
 /* Desktop / kiosk：一画面完結のエッジ配置グリッド
    中央列を空けることで「鏡としての機能（顔が映る場所）」を確保する */
-@media (min-width:920px) {
+@media (min-width:768px) {
 
   html,
   body {
@@ -248,7 +257,7 @@ body {
   }
 
   .mirror-grid {
-    height: 200vh;
+    height: var(--zoom-percent-vh);
     display: grid;
     grid-template-columns: minmax(260px, 1.05fr) minmax(120px, 0.7fr) minmax(300px, 1.15fr);
     grid-template-rows: auto minmax(0, 1fr) auto;
@@ -312,7 +321,7 @@ body {
   scrollbar-width: none;
 }
 
-@media (max-width:919px) {
+@media (max-width:767px) {
   body {
     overflow-y: auto;
     overflow-x: hidden;
@@ -338,8 +347,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: clamp(120px, 13vw, 168px);
-  height: clamp(120px, 13vw, 168px);
+  width: clamp(160px, 15vw, 196px);
+  height: clamp(160px, 15vw, 196px);
   margin: 2px 0 6px -6px;
 }
 
@@ -354,13 +363,13 @@ body {
 .clock-ring-track {
   fill: none;
   stroke: rgba(255, 255, 255, 0.06);
-  stroke-width: 1.5;
+  stroke-width: 3;
 }
 
 .clock-ring-fill {
   fill: none;
   stroke: var(--accent);
-  stroke-width: 1.5;
+  stroke-width: 3;
   stroke-linecap: round;
   stroke-dasharray: 339.3;
   stroke-dashoffset: 339.3;
@@ -368,23 +377,74 @@ body {
   transition: stroke-dashoffset 0.9s linear;
 }
 
+.day-progress-ring {
+  position: absolute;
+  inset: -12px;
+  width: calc(100% + 24px);
+  height: calc(100% + 24px);
+  overflow: visible;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.day-progress-track,
+.day-progress-fill {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.day-progress-track {
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 2;
+}
+
+.day-progress-fill {
+  stroke: url("#day-progress-gradient");
+  stroke-width: 3;
+  filter: drop-shadow(0 0 5px rgba(255, 180, 84, 0.38));
+  transition: stroke-dasharray 1.2s var(--ease), stroke-dashoffset 1.2s var(--ease);
+}
+
+.day-progress-endpoint {
+  fill: var(--text-0);
+  stroke: var(--bg-0);
+  stroke-width: 1.5;
+  transition: cx 1.2s var(--ease), cy 1.2s var(--ease);
+}
+
+.day-progress-endpoint.sunrise {
+  fill: var(--text-0);
+}
+
+.day-progress-endpoint.sunset {
+  fill: var(--text-0);
+}
+
+.day-progress-now {
+  fill: var(--text-0);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  filter: drop-shadow(0 0 5px var(--accent));
+  transition: cx 1.2s var(--ease), cy 1.2s var(--ease);
+}
+
 .clock-readout {
   display: flex;
   align-items: baseline;
-  gap: 2px;
+  gap: 4px;
   font-family: var(--font-display);
 }
 
 .time-main {
-  font-size: clamp(1.5rem, 2.3vw, 2.1rem);
-  font-weight: 600;
+  font-size: clamp(1.8rem, 3.5vw, 3.2rem);
+  font-weight: 700;
   letter-spacing: 0.01em;
   font-variant-numeric: tabular-nums;
 }
 
 .time-seconds {
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 1rem;
   color: var(--text-2);
   align-self: flex-start;
   margin-top: 4px;
@@ -396,55 +456,6 @@ body {
   font-size: 0.95rem;
   color: var(--text-1);
   font-weight: 500;
-}
-
-.day-progress {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.day-progress-icon {
-  width: 15px;
-  height: 15px;
-  flex: none;
-  color: var(--text-2);
-  display: flex;
-}
-
-.day-progress-icon svg {
-  width: 100%;
-  height: 100%;
-}
-
-.day-progress-track {
-  position: relative;
-  flex: 1;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 4px;
-  overflow: visible;
-}
-
-.day-progress-fill {
-  height: 100%;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--accent-dim), var(--accent));
-  width: 0%;
-  transition: width 1.2s var(--ease);
-}
-
-.day-progress-now {
-  position: absolute;
-  top: 50%;
-  left: 0%;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-0);
-  box-shadow: 0 0 8px 2px var(--accent-soft);
-  transform: translate(-50%, -50%);
-  transition: left 1.2s var(--ease);
 }
 
 .day-progress-labels {
@@ -1040,9 +1051,9 @@ body {
   position: fixed;
   inset: 0;
   z-index: 50;
-  width: 200%;
-  height: 200%;
-  transform: scale(0.5);
+  width: var(--zoom-percent);
+  height: var(--zoom-percent);
+  transform: scale(var(--zoom-scale));
   transform-origin: top left;
   display: flex;
   align-items: center;
@@ -1197,7 +1208,7 @@ body.is-night .mirror-backdrop {
 /* ==========================================================================
    ポータブル表示（縦型・狭幅）：積み上げレイアウトへフォールバック
    ========================================================================== */
-@media (max-width:919px) {
+@media (max-width:767px) {
   .weather-hero-main {
     flex-wrap: wrap;
   }

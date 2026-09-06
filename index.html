@@ -1,15 +1,19 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover">
-<title>Smart Mirror</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, viewport-fit=cover">
+  <title>Smart Mirror</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
   <!-- 鏡面の質感を演出する背景レイヤー（クリック等には反応しない） -->
@@ -29,24 +33,26 @@
           <circle class="clock-ring-track" cx="60" cy="60" r="54"></circle>
           <circle class="clock-ring-fill" id="clock-ring-fill" cx="60" cy="60" r="54"></circle>
         </svg>
+        <svg class="day-progress-ring" viewBox="0 0 140 140" aria-hidden="true">
+          <defs>
+            <linearGradient id="day-progress-gradient" gradientUnits="userSpaceOnUse" x1="70" y1="8" x2="70" y2="8">
+              <stop offset="0%" stop-color="#f7fbff"></stop>
+              <stop offset="50%" stop-color="#ffb454"></stop>
+              <stop offset="100%" stop-color="#f7fbff"></stop>
+            </linearGradient>
+          </defs>
+          <circle class="day-progress-track" cx="70" cy="70" r="62"></circle>
+          <circle class="day-progress-fill" id="day-progress-fill" cx="70" cy="70" r="62"></circle>
+          <circle class="day-progress-endpoint sunrise" id="day-progress-sunrise" cx="70" cy="8" r="3"></circle>
+          <circle class="day-progress-endpoint sunset" id="day-progress-sunset" cx="70" cy="8" r="3"></circle>
+          <circle class="day-progress-now" id="day-progress-now" cx="70" cy="8" r="4"></circle>
+        </svg>
         <div class="clock-readout">
           <span class="time-main" id="time-main">--:--</span><span class="time-seconds" id="time-seconds">--</span>
         </div>
       </div>
       <p class="date-line" id="date-line">&nbsp;</p>
 
-      <div class="day-progress" id="day-progress">
-        <span class="day-progress-icon" title="日の出">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 18h16M6.5 18a5.5 5.5 0 0 1 11 0"/><path d="M12 8v4.2M8.5 9.5l1.3 1.3M15.5 9.5l-1.3 1.3"/><path d="M2.5 21h19" opacity="0.5"/></svg>
-        </span>
-        <div class="day-progress-track">
-          <div class="day-progress-fill" id="day-progress-fill"></div>
-          <div class="day-progress-now" id="day-progress-now"></div>
-        </div>
-        <span class="day-progress-icon" title="日の入り">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 18h16M6.5 18a5.5 5.5 0 0 1 11 0"/><path d="M12 13v-4M8.5 10.8 9.8 9.5M15.5 10.8l-1.3-1.3"/><path d="M2.5 21h19" opacity="0.5"/></svg>
-        </span>
-      </div>
       <div class="day-progress-labels">
         <span id="sunrise-label">--:--</span>
         <span id="sunset-label">--:--</span>
@@ -115,7 +121,9 @@
           </article>
         </div>
         <div class="news-meta">
-          <div class="news-progress"><div class="news-progress-fill" id="news-progress-fill"></div></div>
+          <div class="news-progress">
+            <div class="news-progress-fill" id="news-progress-fill"></div>
+          </div>
           <div class="news-dots" id="news-dots"></div>
         </div>
       </section>
@@ -150,9 +158,9 @@
       <div class="alert-details" id="alert-details">
         <div class="alert-icon" aria-hidden="true">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <path d="M12 3 1 21h22L12 3Z" stroke-linejoin="round"/>
-            <path d="M12 9.5v5" stroke-linecap="round"/>
-            <circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/>
+            <path d="M12 3 1 21h22L12 3Z" stroke-linejoin="round" />
+            <path d="M12 9.5v5" stroke-linecap="round" />
+            <circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none" />
           </svg>
         </div>
         <p class="alert-eyebrow">天気急変アラート</p>
@@ -160,10 +168,11 @@
         <p class="alert-body" id="alert-body"></p>
       </div>
       <div class="alert-compact" id="alert-compact">
-        <svg class="alert-compact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-          <path d="M12 3 1 21h22L12 3Z" stroke-linejoin="round"/>
-          <path d="M12 9.5v5" stroke-linecap="round"/>
-          <circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none"/>
+        <svg class="alert-compact-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+          aria-hidden="true">
+          <path d="M12 3 1 21h22L12 3Z" stroke-linejoin="round" />
+          <path d="M12 9.5v5" stroke-linecap="round" />
+          <circle cx="12" cy="17.2" r="0.9" fill="currentColor" stroke="none" />
         </svg>
         <span class="alert-compact-text" id="alert-compact-text"></span>
       </div>
@@ -172,4 +181,5 @@
 
   <script type="module" src="app.js"></script>
 </body>
+
 </html>

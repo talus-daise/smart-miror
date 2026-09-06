@@ -24,7 +24,7 @@ const CONFIG = {
 
   news: {
     // rss2json (https://rss2json.com) 経由で読み込むRSSフィード。無料枠は1日数千件程度。
-    rssUrl: "https://www3.nhk.or.jp/rss/news/cat0.xml",
+    rssUrl: "https://news.web.nhk/n-data/conf/na/rss/cat0.xml",
     maxItems: 8,
     rotateIntervalMs: 12000,
     refetchIntervalMs: 15 * 60 * 1000,
@@ -220,6 +220,8 @@ function formatOnset(iso) {
    ========================================================================== */
 const DAY_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
 const RING_CIRCUMFERENCE = 339.3;
+const DAY_PROGRESS_RADIUS = 62;
+const DAY_PROGRESS_CIRCUMFERENCE = 2 * Math.PI * DAY_PROGRESS_RADIUS;
 
 function greetingFor(hour) {
   if (hour >= 5 && hour < 10) return "おはようございます";
@@ -236,10 +238,42 @@ function updateDayProgress() {
   const sunrise = new Date(state.sunrise);
   const sunset = new Date(state.sunset);
   const now = new Date();
-  let frac = (now - sunrise) / (sunset - sunrise);
-  frac = Math.max(0, Math.min(1, frac));
-  document.getElementById("day-progress-fill").style.width = `${frac * 100}%`;
-  document.getElementById("day-progress-now").style.left = `${frac * 100}%`;
+  const midnight = new Date(now);
+  midnight.setHours(0, 0, 0, 0);
+  const dayLength = 24 * 60 * 60 * 1000;
+  const sunriseFraction = (sunrise - midnight) / dayLength;
+  const sunsetFraction = (sunset - midnight) / dayLength;
+  const daylightFraction = Math.max(0, sunsetFraction - sunriseFraction);
+  const currentFraction = Math.max(0, Math.min(1, (now - midnight) / dayLength));
+  const dayProgress = document.getElementById("day-progress-fill");
+  const currentMarker = document.getElementById("day-progress-now");
+  const sunriseMarker = document.getElementById("day-progress-sunrise");
+  const sunsetMarker = document.getElementById("day-progress-sunset");
+
+  dayProgress.style.strokeDasharray = `${daylightFraction * DAY_PROGRESS_CIRCUMFERENCE} ${DAY_PROGRESS_CIRCUMFERENCE}`;
+  dayProgress.style.strokeDashoffset = String(-sunriseFraction * DAY_PROGRESS_CIRCUMFERENCE);
+
+  const pointOnRing = (fraction) => {
+    const angle = fraction * 2 * Math.PI;
+    return {
+      x: 70 + DAY_PROGRESS_RADIUS * Math.cos(angle),
+      y: 70 + DAY_PROGRESS_RADIUS * Math.sin(angle)
+    };
+  };
+  const sunrisePoint = pointOnRing(sunriseFraction);
+  const sunsetPoint = pointOnRing(sunsetFraction);
+  const currentPoint = pointOnRing(currentFraction);
+  const gradient = document.getElementById("day-progress-gradient");
+  gradient.setAttribute("x1", sunrisePoint.x);
+  gradient.setAttribute("y1", sunrisePoint.y);
+  gradient.setAttribute("x2", sunsetPoint.x);
+  gradient.setAttribute("y2", sunsetPoint.y);
+  sunriseMarker.setAttribute("cx", sunrisePoint.x);
+  sunriseMarker.setAttribute("cy", sunrisePoint.y);
+  sunsetMarker.setAttribute("cx", sunsetPoint.x);
+  sunsetMarker.setAttribute("cy", sunsetPoint.y);
+  currentMarker.setAttribute("cx", currentPoint.x);
+  currentMarker.setAttribute("cy", currentPoint.y);
   document.getElementById("sunrise-label").textContent = formatHM(sunrise);
   document.getElementById("sunset-label").textContent = formatHM(sunset);
 }
